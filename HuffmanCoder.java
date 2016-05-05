@@ -1,13 +1,10 @@
-package cs146;
 
 import java.io.*;
 import java.util.HashMap;
 import java.util.PriorityQueue;
 
 /**
- *  Topics touched. Huffman encoding/decoding, trees, priority queues, hashmaps.
- *
- *  TODO:   Either require an instance of HuffmanCoder or make everything static for consistency
+ *  Topics touched. Huffman encoding/decoding, trees, priority queues, HashMaps.
  *
  */
 public class HuffmanCoder {
@@ -16,6 +13,7 @@ public class HuffmanCoder {
     private String filename;
     HashMap<Byte, Integer> countMap;           //Stores the byte quantity count for a file
     HashMap<Byte, String> buildMap;            //The map used to encode and decode files.
+    HuffNode huffTree;                         //Stores the generated Huffman Tree
 
     public HuffmanCoder(String filename) {
         this.filename = filename;
@@ -39,17 +37,13 @@ public class HuffmanCoder {
     // Counts the number of kinds of Bytes in hex and stores it into countMap
     // The type of byte (i.e 25, 3d, ff, etc) is the key and the quantity is the data
     //
-    // POSSIBLE ISSUE: Byte "00000000" gets stored as "0" instead of "00"
     //
     public void getQuantityHashMap() {
         try {
-            File file = new File(this.filename);
-            DataInputStream dis = new DataInputStream(new FileInputStream(file));
+            DataInputStream dis = new DataInputStream(new FileInputStream(this.filename));
             this.countMap = new HashMap<>();
-
             byte[] buffer = new byte[BUFFER_SIZE];
             int length;
-
             while ((length = dis.read(buffer)) != -1) {
                 for (int i=0; i< length; i++) {
                     countMap.put(buffer[i], countMap.getOrDefault(buffer[i], 0) + 1);
@@ -66,15 +60,19 @@ public class HuffmanCoder {
     }
 
     // Prints contents of countMap
-    public void printCountMap() {
-        countMap.forEach((k, v) -> {
-            System.out.printf("%x = %d\n", k, v);
+    public static <T> void printHashMap(HashMap<Byte, T> map) {
+        map.forEach((k, v) -> {
+            System.out.printf("%x = %s\n", k, v);
         });
     }
 
-    // Creates a huffman tree from values a hashmap.
-    // TODO: Generate the encoding value and store it in HuffNode? Needs discussion
-    public static HuffNode makeHuffmanTree(HashMap<Byte, Integer> hashmap) {
+    // Helper method
+    public void makeHuffManTree() {
+        this.huffTree = makeHuffmanTree(countMap);
+    }
+
+    // Creates a huffman tree from quantity HashMap.
+    private static HuffNode makeHuffmanTree(HashMap<Byte, Integer> hashmap) {
         PriorityQueue<HuffNode> queue = new PriorityQueue<HuffNode>();
         hashmap.forEach((k, v) -> {
             HuffNode n = new HuffNode(k, v);
@@ -96,24 +94,56 @@ public class HuffmanCoder {
         return root;
     }
 
-    // TODO:
+    // Helper method
+    public void buildCode() {
+        this.buildMap = new HashMap<Byte, String>();
+        buildCode(this.huffTree, "");
+    }
+
+    // Creates a hashmap that maps bytes to its build code from the Huffman Tree
     private void buildCode(HuffNode x, String s) {
+        if (x == null)
+            return;
         if (!x.isLeaf()) {
-            buildCode(x.left, s + '0');
-            buildCode(x.right, s + '1');
+            buildCode(x.left, s + "0");
+            buildCode(x.right, s + "1");
         }
+        else
+            buildMap.put(x.aByte, s);
+    }
+    // Gets the encoded filename from a normal filename
+    public static String getHuffFilename(String filename) {
+        return filename.substring(0, filename.lastIndexOf('.') + 1) + "huff" + filename.substring(filename.lastIndexOf('.') + 1);
+    }
+
+    // Gets the normal filename from an encoded filename
+    public static String getNormFilename(String filename) {
+        return filename.substring(0, filename.lastIndexOf(".huff") + 1) + filename.substring(filename.indexOf(".huff") + 5);
     }
 
     // Uses the Huffman tree to encode a file.
-    // Takes in a file and a tree and creates a new file with the extension HUFF + original extension
-    // (i.e .txt -> .HUFFTXT)
+    // New file is created in the same directory as the original file.
     public void encode(String filename, HashMap hashmap) {
-        String ext = filename.substring(filename.lastIndexOf('.') + 1);
+        HuffmanCoder.createFile(HuffmanCoder.getHuffFilename(filename));
         FileOutputStream out;
         try {
-            out = new FileOutputStream(filename);
+            //out = new FileOutputStream(HuffmanCoder.getHuffFilename(filename));
+            //out.close();
+            
+            DataInputStream dis = new DataInputStream(new FileInputStream(filename));
+            byte[] buffer = new byte[BUFFER_SIZE];
+            int length;
+            while ((length = dis.read(buffer)) != -1) {
+                for (int i=0; i< length; i++) {
+                    
+                }
+            }
+            dis.close();
         }
         catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
     }
