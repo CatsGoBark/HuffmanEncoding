@@ -13,6 +13,7 @@ public class HuffmanCoder {
     private String filename;
     HashMap<Byte, Integer> countMap;           //Stores the byte quantity count for a file
     HashMap<Byte, String> buildMap;            //The map used to encode and decode files.
+    HashMap<String, Byte> decodeMap;           //
     HuffNode huffTree;                         //Stores the generated Huffman Tree
 
     public HuffmanCoder(String filename) {
@@ -34,10 +35,8 @@ public class HuffmanCoder {
         }
     }
 
-    // Counts the number of kinds of Bytes in hex and stores it into countMap
-    // The type of byte (i.e 25, 3d, ff, etc) is the key and the quantity is the data
-    //
-    //
+    // Counts the number of kinds of Bytes and stores it into countMap
+    // Byte is the key and the quantity is the value
     public void getQuantityHashMap() {
         try {
             DataInputStream dis = new DataInputStream(new FileInputStream(this.filename));
@@ -59,7 +58,7 @@ public class HuffmanCoder {
         }
     }
 
-    // Prints contents of countMap
+    // Prints contents of of a HashMap
     public static <T> void printHashMap(HashMap<Byte, T> map) {
         map.forEach((k, v) -> {
             System.out.printf("%x = %s\n", k, v);
@@ -97,10 +96,11 @@ public class HuffmanCoder {
     // Helper method
     public void buildCode() {
         this.buildMap = new HashMap<Byte, String>();
+        this.decodeMap = new HashMap<String, Byte>();
         buildCode(this.huffTree, "");
     }
 
-    // Creates a hashmap that maps bytes to its build code from the Huffman Tree
+    // Creates a HashMap that maps bytes to its build code from the Huffman Tree and its reverse
     private void buildCode(HuffNode x, String s) {
         if (x == null)
             return;
@@ -108,37 +108,58 @@ public class HuffmanCoder {
             buildCode(x.left, s + "0");
             buildCode(x.right, s + "1");
         }
-        else
+        else {
             buildMap.put(x.aByte, s);
+            decodeMap.put(s, x.aByte);
+        }
     }
-    // Gets the encoded filename from a normal filename
+    // Gets the encoded filename from a normal filename (i.e test.txt -> test.hufftxt)
     public static String getHuffFilename(String filename) {
         return filename.substring(0, filename.lastIndexOf('.') + 1) + "huff" + filename.substring(filename.lastIndexOf('.') + 1);
     }
 
-    // Gets the normal filename from an encoded filename
+    // Gets the normal filename from an encoded filename (i.e test.hufftxt -> test.txt)
     public static String getNormFilename(String filename) {
         return filename.substring(0, filename.lastIndexOf(".huff") + 1) + filename.substring(filename.indexOf(".huff") + 5);
     }
 
+    // Gets the decoded filename from an encoded filename (i.e test.hufftxt -> test-decoded.txt)
+    public static String getDecodedFilename(String filename) {
+        String name = (filename.substring(0, filename.lastIndexOf('.')) + "-decoded");
+        name += "." + filename.substring(filename.indexOf(".huff") + 5);
+        return name;
+    }
+
     // Uses the Huffman tree to encode a file.
     // New file is created in the same directory as the original file.
+    // Takes a file to encode and the build hashmap to encode it.
     public void encode(String filename, HashMap hashmap) {
         HuffmanCoder.createFile(HuffmanCoder.getHuffFilename(filename));
+        File encodedFile = new File(HuffmanCoder.getHuffFilename(filename));
         FileOutputStream out;
+        DataInputStream dis;
         try {
-            //out = new FileOutputStream(HuffmanCoder.getHuffFilename(filename));
-            //out.close();
-            
-            DataInputStream dis = new DataInputStream(new FileInputStream(filename));
+            out = new FileOutputStream(encodedFile);
+            String toByte = "";
+            dis = new DataInputStream(new FileInputStream(filename));
             byte[] buffer = new byte[BUFFER_SIZE];
             int length;
             while ((length = dis.read(buffer)) != -1) {
                 for (int i=0; i< length; i++) {
-                    
+                    toByte += buildMap.get(buffer[i]);
+                }
+                //Testing purposes. Prints our the build code for the file.
+                //Should be the same as the one printed in encode
+                //System.out.println(toByte);
+                while (toByte.length() >= 8) {
+                    Byte b = (byte)Integer.parseInt(toByte.substring(0,8), 2);
+                    out.write(b);
+                    toByte = toByte.substring(8);
                 }
             }
+
             dis.close();
+            out.close();
         }
         catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -149,10 +170,43 @@ public class HuffmanCoder {
     }
 
     // Uses the Huffman tree to decode a file
-    // Takes in a file and and a tree and creates a new file with the original extension found in the file extension.
-    // (i.e .HUFFTXT -> .txt)
+    // New file is created in the same directory as the encoded file
+    // Takes in a file and and a reverse build HashMap
     public void decode(String filename, HashMap hashmap) {
-        // gets the file extension of filename
-        String ext = filename.substring(filename.lastIndexOf('.') + 1);
+        HuffmanCoder.createFile(HuffmanCoder.getDecodedFilename(filename));
+        File decodedFile = new File(HuffmanCoder.getDecodedFilename(filename));
+        FileOutputStream out;
+        DataInputStream dis;
+        try {
+            out = new FileOutputStream(decodedFile);
+            String toCode = "";
+            dis = new DataInputStream(new FileInputStream(filename));
+            byte[] buffer = new byte[BUFFER_SIZE];
+            int length;
+            while ((length = dis.read(buffer)) != -1) {
+                for (int i=0; i< length; i++) {
+                    toCode += String.format("%8s", Integer.toBinaryString(buffer[i] & 0xFF)).replace(' ', '0');
+                }
+                //System.out.println(toCode);
+                int offset = 2;
+                while (offset < toCode.length()) {
+                    if (decodeMap.containsKey(toCode.substring(0,offset))) {
+                        out.write(decodeMap.get(toCode.substring(0, offset)));
+                        toCode = toCode.substring(offset);
+                        offset = 2;
+                    }
+                    else
+                        offset++;
+                }
+            }
+            dis.close();
+            out.close();
+        }
+        catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
