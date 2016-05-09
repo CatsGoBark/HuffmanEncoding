@@ -2,7 +2,6 @@ package cs146;
 
 public class HuffNode implements Comparable<HuffNode>{
 
-    String code = "";               // The huffman code (i.e 010)
     HuffNode left, right, parent;
     Byte aByte;                     // The byte (i.e FF)
     int frequency;                  // The frequency used for huffman tree creation (Unnecessary?)
@@ -35,6 +34,7 @@ public class HuffNode implements Comparable<HuffNode>{
     @Override
     // Returns the tree as a string.
     // Used to write to the file or as a separate file to decode it later
+    // NEEDS WORK
     public String toString() {
         return null;
     }
@@ -44,19 +44,4 @@ public class HuffNode implements Comparable<HuffNode>{
     public static HuffNode getTreeFromString(String str) {
         return null;
     }
-
-    // Needs work if it's ever used
-    /*public static void print(HuffNode n, String line) {
-        // print with colon if leaf node
-        if (n.aByte == null)
-            System.out.println(line + n.frequency + ":" + n.aByte);
-        else
-            System.out.println(line + n.frequency);
-        // Start recursive on left child then right
-        if (n.left != null)
-            print(n.left, line + "-");
-        if (n.right != null)
-            print(n.right, line + "-");
-    }*/
-
 }
