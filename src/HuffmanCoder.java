@@ -1,7 +1,8 @@
 
 import java.io.*;
-import java.util.HashMap;
-import java.util.PriorityQueue;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.*;
 
 /**
  *  Topics touched. Huffman encoding/decoding, trees, priority queues, HashMaps.
@@ -12,9 +13,12 @@ public class HuffmanCoder {
     public final static int BUFFER_SIZE = 512; //Allows for more efficient reading
     private String filename;
     HashMap<Byte, Integer> countMap;           //Stores the byte quantity count for a file
-    HashMap<Byte, String> buildMap;            //The map used to encode
-    HashMap<String, Byte> decodeMap;           //The map used to decode. This is basically a reversed version of buildmap.
+    HashMap<Byte, HuffCode> buildMap;            //The map used to encode
+    HashMap<HuffCode, Byte> decodeMap;           //The map used to decode. This is basically a reversed version of buildmap.
     HuffNode huffTree;                         //Stores the generated Huffman Tree
+
+    private HuffCode[] buildArray;
+    private final static int[] TWO_MASK = {0, 1, 3, 7, 15, 31, 63, 127, 255, 511, 1023, 2047, 4095, 8191, 16383, 32766, 65535};
 
     public HuffmanCoder(String filename) {
         this.filename = filename;
@@ -23,12 +27,41 @@ public class HuffmanCoder {
     // Demonstrates what the program does.
     // Basically outlines the process.
     public static void demo(String filename) {
+        Instant start, end;
+
         HuffmanCoder test = new HuffmanCoder(filename);                         //Get filename and create HuffmanCoder instance
+
+        start = Instant.now();
         test.getQuantityHashMap();                                              //Analyze file
+        end = Instant.now();
+
+        System.out.printf("Analyze File: %s\n", Duration.between(start, end));
+
+        start = Instant.now();
         test.makeHuffManTree();                                                 //Create Huffman tree
+        end = Instant.now();
+
+        System.out.printf("Huffman Tree Creation: %s\n", Duration.between(start, end));
+
+        start = Instant.now();
         test.buildCode();                                                       //Get the Hashmaps used to encode/decode
+        end = Instant.now();
+
+        System.out.printf("Build HashMap: %s\n", Duration.between(start, end));
+
+        start = Instant.now();
         test.encode(filename, test.buildMap);                                   //encode test
+        end = Instant.now();
+
+        System.out.printf("Encode File: %s\n", Duration.between(start, end));
+
+        System.exit(0);
+
+        start = Instant.now();
         test.decode(HuffmanCoder.getHuffFilename(filename), test.decodeMap);    //decode test
+        end = Instant.now();
+
+        System.out.printf("Decode File: %s\n", Duration.between(start, end));
     }
 
     // Creates an empty file in the current directory
@@ -94,10 +127,12 @@ public class HuffmanCoder {
             HuffNode n = new HuffNode(k, v);
             queue.add(n);
         });
+
         HuffNode root = null;
         while (queue.size() > 1)  {
             HuffNode left = queue.remove();
             HuffNode right = queue.remove();
+
             HuffNode total = new HuffNode(left.frequency + right.frequency);
             total.right = left;
             total.left = right;
@@ -112,8 +147,9 @@ public class HuffmanCoder {
 
     // Helper method
     public void buildCode() {
-        this.buildMap = new HashMap<Byte, String>();
-        this.decodeMap = new HashMap<String, Byte>();
+        this.buildMap = new HashMap<Byte, HuffCode>();
+        this.decodeMap = new HashMap<HuffCode, Byte>();
+        this.buildArray = new HuffCode[256];
         buildCode(this.huffTree, "");
     }
 
@@ -126,9 +162,12 @@ public class HuffmanCoder {
             buildCode(x.right, s + "1");
         }
         else {
-            buildMap.put(x.aByte, s);
-            decodeMap.put(s, x.aByte);
+            HuffCode code = new HuffCode(s);
+            buildMap.put(x.aByte, code);
+            decodeMap.put(code, x.aByte);
+            buildArray[x.aByte + 128] = code;
         }
+
     }
     // Gets the encoded filename from a normal filename (i.e test.txt -> test.hufftxt)
     public static String getHuffFilename(String filename) {
@@ -164,31 +203,56 @@ public class HuffmanCoder {
         DataInputStream dis;
         try {
             out = new FileOutputStream(encodedFile);
-            String toByte = "";
             dis = new DataInputStream(new FileInputStream(filename));
+
             byte[] buffer = new byte[BUFFER_SIZE];
+            byte[] out_buffer = new byte[BUFFER_SIZE];
+            int out_idx = 0;
             int length;
+
+            HuffCode code;
+            int size = 0;
+            int data = 0;
+
             while ((length = dis.read(buffer)) != -1) {
-                for (int i=0; i< length; i++) {
-                    toByte += buildMap.get(buffer[i]);
-                }
-                //Testing purposes. Prints our the build code for the file.
-                //Should be the same as the one printed in encode
-                //System.out.println(toByte);
-                while (toByte.length() >= 8) {
-                    Byte b = (byte)Integer.parseInt(toByte.substring(0,8), 2);
-                    out.write(b);
-                    toByte = toByte.substring(8);
+                for (int i=0; i < length; i++) {
+                    code = buildArray[buffer[i] + 128];
+
+                    data <<= code.getSize();
+                    data |= code.getByte();
+
+                    size += code.getSize();
+
+                    while (size >= 8) {
+                        size -= 8;
+                        out_buffer[out_idx++] = (byte) (data >> size);
+                        data &= TWO_MASK[size];
+
+                        if (out_idx == BUFFER_SIZE) {
+                            out.write(out_buffer);
+                            out_idx = 0;
+                        }
+                    }
                 }
             }
 
+            out.write(out_buffer, 0, out_idx);
+
+            int padding = 0;
+
+            if (size != 0) {
+                padding = 8 - size;
+                data = data << padding;
+                out.write(data);
+            }
+
+            System.out.printf("Size: %d Data: %x Padding: %d\n", size, data, padding);
+
+            out.write(padding);
+
             dis.close();
             out.close();
-        }
-        catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }

@@ -17,11 +17,7 @@ public class HuffNode implements Comparable<HuffNode>{
 
     @Override
     public int compareTo(HuffNode n) {
-        if (frequency < n.frequency)
-            return -1;
-        else if(frequency > n.frequency)
-            return 1;
-        return 0;
+        return frequency - n.frequency;
     }
 
     // Returns true if node is a leaf.
@@ -29,13 +25,17 @@ public class HuffNode implements Comparable<HuffNode>{
         return ((left == null) && (right == null));
     }
 
-    @Override
     // Returns the tree as a string.
     // Used to write to the file or as a separate file to decode it later
     // NEEDS WORK
+    @Override
     public String toString() {
-        return null;
+        return "HuffNode{" +
+                "aByte=" + aByte +
+                ", frequency=" + frequency +
+                '}';
     }
+
 
     // Creates a tree from a string
     // Used to recreate the tree used to encode the file to decode it.
