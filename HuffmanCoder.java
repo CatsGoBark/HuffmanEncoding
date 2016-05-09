@@ -133,6 +133,13 @@ public class HuffmanCoder {
     // Uses the Huffman tree to encode a file.
     // New file is created in the same directory as the original file.
     // Takes a file to encode and the build hashmap to encode it.
+    
+    // HUGE ISSUEEEE: If the final file does not end in a perfect byte (i.e 8 bits 00110011 vs. 001 or 00101 <8 bits), it doesn't write it.
+    // This end ups having the encoded file MISSING the last byte or so from files.
+    // SOMETIMES, this is okay but most of the time it makes the file corrupted.
+    // On regular .txt files, it results in missing the last character or so.
+    // SOMEONE PLEASE THINK OF A WORKAROUND.
+    
     public void encode(String filename, HashMap hashmap) {
         HuffmanCoder.createFile(HuffmanCoder.getHuffFilename(filename));
         File encodedFile = new File(HuffmanCoder.getHuffFilename(filename));
@@ -172,6 +179,9 @@ public class HuffmanCoder {
     // Uses the Huffman tree to decode a file
     // New file is created in the same directory as the encoded file
     // Takes in a file and and a reverse build HashMap
+    
+    // ISSUE: See encoding.
+    
     public void decode(String filename, HashMap hashmap) {
         HuffmanCoder.createFile(HuffmanCoder.getDecodedFilename(filename));
         File decodedFile = new File(HuffmanCoder.getDecodedFilename(filename));
