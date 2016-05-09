@@ -19,6 +19,17 @@ public class HuffmanCoder {
     public HuffmanCoder(String filename) {
         this.filename = filename;
     }
+    
+    // Demonstrates what the program does.
+    // Basically outlines the process.
+    public static void demo(String filename) {
+        HuffmanCoder test = new HuffmanCoder(filename);                         //Get filename and create HuffmanCoder instance
+        test.getQuantityHashMap();                                              //Analyze file
+        test.makeHuffManTree();                                                 //Create Huffman tree
+        test.buildCode();                                                       //Get the Hashmaps used to encode/decode
+        test.encode(filename, test.buildMap);                                   //encode test
+        test.decode(HuffmanCoder.getHuffFilename(filename), test.decodeMap);    //decode test
+    }
 
     // Creates an empty file in the current directory
     // Takes in a file name including file type as a parameter.
