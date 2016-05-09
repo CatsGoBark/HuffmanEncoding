@@ -12,8 +12,8 @@ public class HuffmanCoder {
     public final static int BUFFER_SIZE = 512; //Allows for more efficient reading
     private String filename;
     HashMap<Byte, Integer> countMap;           //Stores the byte quantity count for a file
-    HashMap<Byte, String> buildMap;            //The map used to encode and decode files.
-    HashMap<String, Byte> decodeMap;           //
+    HashMap<Byte, String> buildMap;            //The map used to encode
+    HashMap<String, Byte> decodeMap;           //The map used to decode. This is basically a reversed version of buildmap.
     HuffNode huffTree;                         //Stores the generated Huffman Tree
 
     public HuffmanCoder(String filename) {
@@ -37,6 +37,7 @@ public class HuffmanCoder {
 
     // Counts the number of kinds of Bytes and stores it into countMap
     // Byte is the key and the quantity is the value
+    // Run this before running the huffman algorithm. It uses countMap to generate the tree.
     public void getQuantityHashMap() {
         try {
             DataInputStream dis = new DataInputStream(new FileInputStream(this.filename));
@@ -59,6 +60,7 @@ public class HuffmanCoder {
     }
 
     // Prints contents of of a HashMap
+    // Uses for testing purposes only.
     public static <T> void printHashMap(HashMap<Byte, T> map) {
         map.forEach((k, v) -> {
             System.out.printf("%x = %s\n", k, v);
@@ -100,7 +102,7 @@ public class HuffmanCoder {
         buildCode(this.huffTree, "");
     }
 
-    // Creates a HashMap that maps bytes to its build code from the Huffman Tree and its reverse
+    // Creates a HashMap from the huffman tree used to decode and encode files.
     private void buildCode(HuffNode x, String s) {
         if (x == null)
             return;
