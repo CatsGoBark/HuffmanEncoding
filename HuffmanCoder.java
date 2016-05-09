@@ -211,12 +211,12 @@ public class HuffmanCoder {
                     toCode += String.format("%8s", Integer.toBinaryString(buffer[i] & 0xFF)).replace(' ', '0');
                 }
                 //System.out.println(toCode);
-                int offset = 2;
-                while (offset < toCode.length()) {
+                int offset = 1;
+                while (offset <= toCode.length()) {
                     if (decodeMap.containsKey(toCode.substring(0,offset))) {
                         out.write(decodeMap.get(toCode.substring(0, offset)));
                         toCode = toCode.substring(offset);
-                        offset = 2;
+                        offset = 1;
                     }
                     else
                         offset++;
