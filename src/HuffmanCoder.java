@@ -109,7 +109,10 @@ public class HuffmanCoder {
     }
 
     public int getBufferSize() {
-        return 0;
+        return this.countMap.entrySet()
+                .stream()
+                .mapToInt(obj -> obj.getValue() * buildArray[obj.getKey()+128].getSize())
+                .sum();
     }
 
     // Helper method
@@ -199,9 +202,14 @@ public class HuffmanCoder {
         File encodedFile = new File(HuffmanCoder.getHuffFilename(filename));
         FileOutputStream out;
         DataInputStream dis;
+
         try {
             out = new FileOutputStream(encodedFile);
             dis = new DataInputStream(new FileInputStream(filename));
+
+            int padding = this.getBufferSize() % 8;
+
+            out.write(padding);
 
             byte[] buffer = new byte[BUFFER_SIZE];
             byte[] out_buffer = new byte[BUFFER_SIZE];
@@ -236,17 +244,9 @@ public class HuffmanCoder {
 
             out.write(out_buffer, 0, out_idx);
 
-            int padding = 0;
-
             if (size != 0) {
-                padding = 8 - size;
-                data = data << padding;
                 out.write(data);
             }
-
-            System.out.printf("Size: %d Data: %x Padding: %d\n", size, data, padding);
-
-            out.write(padding);
 
             dis.close();
             out.close();
@@ -284,13 +284,20 @@ public class HuffmanCoder {
 
             int data = 0;
             int size = 0;
-            int index;
+            int index, offset;
             HuffCode code;
+
+            int padding = dis.readByte();
 
             while ((length = dis.read(buffer)) != -1) {
 
-                for (int i=0; i < length; i++) {
-                    int offset = 7;
+                for (int i = 0; i < length; i++) {
+                    if (padding != 0 && i == length - 1 && dis.available() == 0) {
+                        offset = padding - 1;
+                    } else {
+                        offset = 7;
+                    }
+
                     while (offset >= 0) {
                         data <<= 1;
                         size += 1;
