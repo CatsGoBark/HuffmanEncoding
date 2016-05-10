@@ -283,7 +283,9 @@ public class HuffmanCoder {
             dis = new DataInputStream(new FileInputStream(filename));
 
             byte[] buffer = new byte[BUFFER_SIZE];
+            byte[] out_buffer = new byte[BUFFER_SIZE];
             int length;
+            int out_idx = 0;
 
             int data = 0;
             int size = 0;
@@ -304,13 +306,22 @@ public class HuffmanCoder {
                         if (index >= 0) {
                             // found target code
                             code = this.decodeArray[index];
-                            out.write(code.getaByte());
+                            out_buffer[out_idx++] = code.getaByte();
+
+                            if (out_idx == BUFFER_SIZE) {
+                                out.write(out_buffer);
+                                out_idx = 0;
+                            }
 
                             data = 0;
                             size = 0;
                         }
                     }
                 }
+            }
+
+            if (out_idx != 0) {
+                out.write(out_buffer, 0, out_idx);
             }
 
             dis.close();
