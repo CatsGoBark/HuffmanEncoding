@@ -36,30 +36,30 @@ public class HuffmanEncoder {
         }
     }
 
-    private HuffNode buildHuffmanTree() {
-        PriorityQueue<HuffNode> queue = new PriorityQueue<>();
-
-        countMap.forEach((k, v) -> {
-            HuffNode n = new HuffNode(k, v);
-            queue.add(n);
-        });
-
-        HuffNode root = null;
-        while (queue.size() > 1)  {
-            HuffNode left = queue.remove();
-            HuffNode right = queue.remove();
-
-            HuffNode total = new HuffNode(left.frequency + right.frequency);
-
-            total.right = left;
-            total.left = right;
-
-            left.parent = total;
-            right.parent = total;
-            queue.add(total);
-            // go until the root is found
-            root = total;
-        }
-        return root;
-    }
+//    private HuffNode buildHuffmanTree() {
+//        PriorityQueue<HuffNode> queue = new PriorityQueue<>();
+//
+//        countMap.forEach((k, v) -> {
+//            HuffNode n = new HuffNode(k, v);
+//            queue.add(n);
+//        });
+//
+//        HuffNode root = null;
+//        while (queue.size() > 1)  {
+//            HuffNode left = queue.remove();
+//            HuffNode right = queue.remove();
+//
+//            HuffNode total = new HuffNode(left.frequency + right.frequency);
+//
+//            total.right = left;
+//            total.left = right;
+//
+//            left.parent = total;
+//            right.parent = total;
+//            queue.add(total);
+//            // go until the root is found
+//            root = total;
+//        }
+//        return root;
+//    }
 }

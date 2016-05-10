@@ -12,12 +12,13 @@ public class HuffmanCoder {
 
     public final static int BUFFER_SIZE = 512; //Allows for more efficient reading
     private String filename;
-    HashMap<Byte, Integer> countMap;           //Stores the byte quantity count for a file
-    HashMap<Byte, HuffCode> buildMap;            //The map used to encode
-    HashMap<HuffCode, Byte> decodeMap;           //The map used to decode. This is basically a reversed version of buildmap.
-    HuffNode huffTree;                         //Stores the generated Huffman Tree
-
+    private HashMap<Byte, Integer> countMap;           //Stores the byte quantity count for a file
+    private HashMap<HuffCode, Byte> decodeMap;           //The map used to decode. This is basically a reversed version of buildmap.
     private HuffCode[] buildArray;
+    private HuffCode[] decodeArray;
+
+    private HuffNode huffTree;                         //Stores the generated Huffman Tree
+
     private final static int[] TWO_MASK = {0, 1, 3, 7, 15, 31, 63, 127, 255, 511, 1023, 2047, 4095, 8191, 16383, 32766, 65535};
 
     public HuffmanCoder(String filename) {
@@ -50,12 +51,12 @@ public class HuffmanCoder {
         System.out.printf("Build HashMap: %s\n", Duration.between(start, end));
 
         start = Instant.now();
-        test.encode(filename, test.buildMap);                                   //encode test
+        test.encode(filename);                                   //encode test
         end = Instant.now();
 
         System.out.printf("Encode File: %s\n", Duration.between(start, end));
 
-        System.exit(0);
+//        System.exit(0);
 
         start = Instant.now();
         test.decode(HuffmanCoder.getHuffFilename(filename), test.decodeMap);    //decode test
@@ -147,10 +148,12 @@ public class HuffmanCoder {
 
     // Helper method
     public void buildCode() {
-        this.buildMap = new HashMap<Byte, HuffCode>();
-        this.decodeMap = new HashMap<HuffCode, Byte>();
+        this.decodeMap = new HashMap<>();
         this.buildArray = new HuffCode[256];
+        this.decodeArray = new HuffCode[256];
         buildCode(this.huffTree, "");
+
+        Arrays.sort(this.decodeArray, (o1, o2) -> (o1.getByte() - o2.getByte() != 0) ? o1.getByte() - o2.getByte() : o1.getSize() - o2.getSize());
     }
 
     // Creates a HashMap from the huffman tree used to decode and encode files.
@@ -162,10 +165,10 @@ public class HuffmanCoder {
             buildCode(x.right, s + "1");
         }
         else {
-            HuffCode code = new HuffCode(s);
-            buildMap.put(x.aByte, code);
+            HuffCode code = new HuffCode(s, x.aByte);
             decodeMap.put(code, x.aByte);
             buildArray[x.aByte + 128] = code;
+            decodeArray[x.aByte + 128] = code;
         }
 
     }
@@ -196,7 +199,7 @@ public class HuffmanCoder {
     // On regular .txt files, it results in missing the last character or so.
     // SOMEONE PLEASE THINK OF A WORKAROUND.
     
-    public void encode(String filename, HashMap hashmap) {
+    public void encode(String filename) {
         HuffmanCoder.createFile(HuffmanCoder.getHuffFilename(filename));
         File encodedFile = new File(HuffmanCoder.getHuffFilename(filename));
         FileOutputStream out;
@@ -262,41 +265,57 @@ public class HuffmanCoder {
     // Takes in a file and and a reverse build HashMap
     
     // ISSUE: See encoding.
+
+    private int indexOfCode(int target, int size) {
+        return Arrays.binarySearch(this.decodeArray, new HuffCode(target, size), (o1, o2) -> (o1.getByte() - o2.getByte() != 0) ? o1.getByte() - o2.getByte() : o1.getSize() - o2.getSize());
+    }
     
     public void decode(String filename, HashMap hashmap) {
         HuffmanCoder.createFile(HuffmanCoder.getDecodedFilename(filename));
+
         File decodedFile = new File(HuffmanCoder.getDecodedFilename(filename));
+
         FileOutputStream out;
         DataInputStream dis;
+
         try {
             out = new FileOutputStream(decodedFile);
-            String toCode = "";
             dis = new DataInputStream(new FileInputStream(filename));
+
             byte[] buffer = new byte[BUFFER_SIZE];
             int length;
+
+            int data = 0;
+            int size = 0;
+            int index;
+            HuffCode code;
+
             while ((length = dis.read(buffer)) != -1) {
-                for (int i=0; i< length; i++) {
-                    toCode += String.format("%8s", Integer.toBinaryString(buffer[i] & 0xFF)).replace(' ', '0');
-                }
-                //System.out.println(toCode);
-                int offset = 1;
-                while (offset <= toCode.length()) {
-                    if (decodeMap.containsKey(toCode.substring(0,offset))) {
-                        out.write(decodeMap.get(toCode.substring(0, offset)));
-                        toCode = toCode.substring(offset);
-                        offset = 1;
+                for (int i=0; i < length; i++) {
+                    int offset = 7;
+                    while (offset >= 0) {
+                        data <<= 1;
+                        size += 1;
+                        data |= buffer[i] >> offset & 0x1;
+                        offset -= 1;
+
+                        index = this.indexOfCode(data, size);
+
+                        if (index >= 0) {
+                            // found target code
+                            code = this.decodeArray[index];
+                            out.write(code.getaByte());
+
+                            data = 0;
+                            size = 0;
+                        }
                     }
-                    else
-                        offset++;
                 }
             }
+
             dis.close();
             out.close();
-        }
-        catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
