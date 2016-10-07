@@ -13,7 +13,7 @@ Here's the process basically.
 
 5. Encode
 
-  a. Write the tree to the file first (NO IDEA HOW)
+  a. Write the tree to the file first
   
   b. Write the encoded bits to the file using the buildmap Hashmap.
   
