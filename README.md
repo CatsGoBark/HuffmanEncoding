@@ -22,7 +22,7 @@ Here's the process basically.
 
 6. Decode
 
-  a. Read the first line which SHOULD have the tree used to encode the file ^ (AGAIN, NO IDEA HOW)
+  a. Read the first line which SHOULD have the tree used to encode the file
   
   b. Recreate the tree
   
